@@ -1717,10 +1717,39 @@ static void ViewportSortParentSprites(ParentSpriteToSortVector *psdv)
 }
 
 
+/**
+ * Draw the drop shadow of a parent sprite: its silhouette, darkened, shifted towards the
+ * south east by an amount that grows with the height of the bounding box.
+ * @param ps The sprite to draw the shadow for.
+ */
+static void ViewportDrawSpriteShadow(const ParentSpriteToDraw *ps)
+{
+	if (ps->image == SPR_EMPTY_BOUNDING_BOX) return;
+	/* Objects already drawn transparent would get darkened twice. */
+	if (HasBit(ps->image, PALETTE_MODIFIER_TRANSPARENT)) return;
+
+	int height = ps->zmax - ps->zmin;
+	/* Flat objects cast no shadow; low but wide objects are ground overlays like pavements and fields. */
+	if (height <= 0) return;
+	if (height < static_cast<int>(TILE_HEIGHT) && (ps->xmax - ps->xmin + 1) * (ps->ymax - ps->ymin + 1) >= static_cast<int>(TILE_SIZE * TILE_SIZE / 2)) return;
+
+	int offset = Clamp(height / 2, 2, 24) * ZOOM_BASE;
+	SpriteID shadow = ps->image;
+	SetBit(shadow, PALETTE_MODIFIER_TRANSPARENT);
+	DrawSpriteViewport(shadow, PALETTE_TO_TRANSPARENT, ps->x + offset, ps->y + offset / 2, ps->sub);
+}
+
 static void ViewportDrawParentSprites(const ParentSpriteToSortVector *psd, const ChildScreenSpriteToDrawVector *csstdv)
 {
+	/* All shadows are drawn before any object, so they only fall on the ground and never on neighbouring objects. */
+	if (_settings_client.gui.sprite_shadows && _vd.dpi.zoom < ZoomLevel::Out4x) {
+		for (const ParentSpriteToDraw *ps : *psd) ViewportDrawSpriteShadow(ps);
+	}
+
 	for (const ParentSpriteToDraw *ps : *psd) {
-		if (ps->image != SPR_EMPTY_BOUNDING_BOX) DrawSpriteViewport(ps->image, ps->pal, ps->x, ps->y, ps->sub);
+		if (ps->image != SPR_EMPTY_BOUNDING_BOX) {
+			DrawSpriteViewport(ps->image, ps->pal, ps->x, ps->y, ps->sub);
+		}
 
 		int child_idx = ps->first_child;
 		while (child_idx >= 0) {
