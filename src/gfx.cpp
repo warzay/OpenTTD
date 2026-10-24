@@ -51,7 +51,7 @@ PauseModes _pause_mode;
 GameSessionStats _game_session_stats; ///< Statistics about the current session.
 
 static EnumIndexArray<std::array<uint8_t, 244>, FontSize, FontSize::End> _stringwidth_table; ///< Cache containing width of often used characters. @see GetCharacterWidth()
-DrawPixelInfo *_cur_dpi;
+thread_local DrawPixelInfo *_cur_dpi; ///< Thread local: viewport rendering threads draw into their own strip.
 
 static void GfxMainBlitterViewport(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE);
 static void GfxMainBlitter(const Sprite *sprite, int x, int y, BlitterMode mode, const SubSprite *sub = nullptr, SpriteID sprite_id = SPR_CURSOR_MOUSE, ZoomLevel zoom = ZoomLevel::Min);
@@ -71,7 +71,7 @@ int _gui_scale_cfg;                         ///< GUI scale in config.
  * @ingroup dirty
  */
 static Rect _invalid_rect;
-static const uint8_t *_colour_remap_ptr;
+static thread_local const uint8_t *_colour_remap_ptr;
 static uint8_t _string_colourremap[3]; ///< Recoloursprite for stringdrawing. The grf loader ensures that #SpriteType::Font sprites only use colours 0 to 2.
 
 static const uint DIRTY_BLOCK_HEIGHT   = 8;

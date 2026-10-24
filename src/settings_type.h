@@ -236,6 +236,7 @@ struct GUISettings {
 	bool modern_gui; ///< flat widgets and window shadows instead of the classic bevelled look
 	bool sprite_shadows; ///< draw drop shadows under vehicles, buildings and other objects in viewports
 	bool seasons; ///< visual seasons: winter snow in the temperate climate and a seasonal colour tone
+	bool multithreaded_viewport; ///< blit large viewport areas with several threads
 	uint16_t daynight_cycle_days; ///< length of one day/night lighting cycle in game days
 	bool measure_tooltip; ///< show a permanent tooltip when dragging tools
 	uint8_t liveries; ///< options for displaying company liveries, 0=none, 1=self, 2=all

@@ -233,6 +233,6 @@ std::pair<uint8_t, uint8_t> GetBroadestDigit(FontSize size);
 
 int GetCharacterHeight(FontSize size);
 
-extern DrawPixelInfo *_cur_dpi;
+extern thread_local DrawPixelInfo *_cur_dpi;
 
 #endif /* GFX_FUNC_H */

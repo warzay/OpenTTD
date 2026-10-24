@@ -22,6 +22,9 @@
 #include "table/sprites.h"
 #include "table/palette_convert.h"
 
+#include <atomic>
+#include <mutex>
+
 #include "safeguards.h"
 
 /** Default of 4MB spritecache. */
@@ -30,7 +33,7 @@ uint _sprite_cache_size = 4;
 
 static std::vector<SpriteCache> _spritecache;
 static size_t _spritecache_bytes_used = 0;
-static uint32_t _sprite_lru_counter;
+static std::atomic<uint32_t> _sprite_lru_counter;
 static std::vector<std::unique_ptr<SpriteFile>> _sprite_files;
 
 static inline SpriteCache *GetSpriteCache(uint index)
@@ -765,7 +768,7 @@ void IncreaseSpriteLRU()
 	}
 
 	if (_sprite_lru_counter >= 0xC0000000) {
-		Debug(Facility::Sprite, Severity::Notice, "Fixing lru {}, inuse={}", _sprite_lru_counter, _spritecache_bytes_used);
+		Debug(Facility::Sprite, Severity::Notice, "Fixing lru {}, inuse={}", _sprite_lru_counter.load(), _spritecache_bytes_used);
 
 		for (SpriteCache &sc : _spritecache) {
 			if (sc.ptr != nullptr) {
@@ -871,8 +874,14 @@ void *GetRawSprite(SpriteID sprite, SpriteType type, SpriteAllocator *allocator,
 		/* Update LRU */
 		sc->lru = ++_sprite_lru_counter;
 
-		/* Load the sprite, if it is not loaded, yet */
+		/* Load the sprite, if it is not loaded, yet. Viewport rendering threads may look up
+		 * sprites concurrently; loading is serialised and the sprite cache is never shrunk
+		 * while they run (see IncreaseSpriteLRU). */
 		if (sc->ptr == nullptr) {
+			static std::mutex load_mutex;
+			std::lock_guard<std::mutex> lock(load_mutex);
+			if (sc->ptr != nullptr) return static_cast<void *>(sc->ptr.get());
+
 			UniquePtrSpriteAllocator cache_allocator;
 			if (sc->type == SpriteType::Recolour) {
 				ReadRecolourSprite(*sc->file, sc->file_pos, sc->length, cache_allocator);

@@ -92,6 +92,9 @@
 #include "framerate_type.h"
 #include "viewport_cmd.h"
 #include "viewport_light.h"
+#include "thread.h"
+
+#include <chrono>
 
 #include <forward_list>
 #include <stack>
@@ -1765,6 +1768,109 @@ static void ViewportDrawParentSprites(const ParentSpriteToSortVector *psd, const
 }
 
 /**
+ * Make sure a sprite and its recolour sprite are in the sprite cache, so that the
+ * rendering threads never have to load one (loading touches shared state).
+ * Mirrors the lookups done by DrawSpriteViewport().
+ * @param img Sprite with palette modifiers.
+ * @param pal Palette.
+ */
+static void ViewportPreloadSprite(SpriteID img, PaletteID pal)
+{
+	if (img == SPR_EMPTY_BOUNDING_BOX) return;
+	GetSprite(GB(img, 0, SPRITE_WIDTH), SpriteType::Normal);
+	if (HasBit(img, PALETTE_MODIFIER_TRANSPARENT)) {
+		GetNonSprite(GB(pal, 0, PALETTE_WIDTH), SpriteType::Recolour);
+	} else if (pal != PAL_NONE && !HasBit(pal, PALETTE_TEXT_RECOLOUR)) {
+		GetNonSprite(GB(pal, 0, PALETTE_WIDTH), SpriteType::Recolour);
+	}
+}
+
+/** Preload every sprite collected for the current viewport draw. */
+static void ViewportPreloadSprites()
+{
+	for (const TileSpriteToDraw &ts : _vd.tile_sprites_to_draw) ViewportPreloadSprite(ts.image, ts.pal);
+	for (const ParentSpriteToDraw &ps : _vd.parent_sprites_to_draw) ViewportPreloadSprite(ps.image, ps.pal);
+	for (const ChildScreenSpriteToDraw &cs : _vd.child_screen_sprites_to_draw) ViewportPreloadSprite(cs.image, cs.pal);
+	if (_settings_client.gui.sprite_shadows) GetNonSprite(PALETTE_TO_TRANSPARENT, SpriteType::Recolour);
+}
+
+/**
+ * Blit the collected sprites of the current viewport draw into one vertical strip of its area.
+ * Runs on a rendering thread: it only reads the shared sprite lists and writes its own pixels.
+ * @param strip The strip to draw, in the coordinates of the viewport draw.
+ */
+static void ViewportBlitStrip(DrawPixelInfo strip)
+{
+	AutoRestoreBackup dpi_backup(_cur_dpi, &strip);
+
+	if (!_vd.tile_sprites_to_draw.empty()) ViewportDrawTileSprites(&_vd.tile_sprites_to_draw);
+	ViewportDrawParentSprites(&_vd.parent_sprites_to_sort, &_vd.child_screen_sprites_to_draw);
+
+	/* Apply the day/night lighting to the drawn landscape, but not to the overlays and labels drawn later. */
+	if (!IsViewportLightNeutral()) {
+		int light_width = UnScaleByZoom(strip.width, strip.zoom);
+		int light_height = UnScaleByZoom(strip.height, strip.zoom);
+		if (light_width > 0 && light_height > 0) {
+			BlitterFactory::GetCurrentBlitter()->TintRect(strip.dst_ptr, light_width, light_height, GetViewportLight());
+		}
+	}
+}
+
+/**
+ * Blit the collected sprites of the current viewport draw, using several threads for large areas.
+ * The sprites were collected and sorted by the main thread; the blitting only reads them.
+ */
+static int ViewportBlitSprites()
+{
+	const ZoomLevel zoom = _vd.dpi.zoom;
+	const int pixel_width = UnScaleByZoom(_vd.dpi.width, zoom);
+	const int pixel_height = UnScaleByZoom(_vd.dpi.height, zoom);
+
+	/* Small areas (moving vehicles, scrolling strips) are not worth the thread handover. */
+	static constexpr int MIN_PARALLEL_PIXELS = 256 * 256;
+	static constexpr int MIN_STRIP_PIXELS = 128;
+	int strips = 1;
+	if (_settings_client.gui.multithreaded_viewport && pixel_width * pixel_height >= MIN_PARALLEL_PIXELS) {
+		strips = std::clamp(static_cast<int>(std::thread::hardware_concurrency()), 1, 8);
+		strips = std::clamp(pixel_width / MIN_STRIP_PIXELS, 1, strips);
+	}
+
+	if (strips == 1) {
+		ViewportBlitStrip(_vd.dpi);
+		return 1;
+	}
+
+	/* Strip boundaries must stay aligned to whole pixels at the current zoom level. */
+	const int unit = ScaleByZoom(1, zoom);
+	const int strip_width = (_vd.dpi.width / strips) / unit * unit;
+	Blitter *blitter = BlitterFactory::GetCurrentBlitter();
+
+	std::vector<std::thread> workers;
+	workers.reserve(strips - 1);
+	for (int i = 1; i < strips; i++) {
+		DrawPixelInfo strip = _vd.dpi;
+		strip.left += i * strip_width;
+		strip.width = (i == strips - 1) ? _vd.dpi.width - i * strip_width : strip_width;
+		strip.dst_ptr = blitter->MoveTo(_vd.dpi.dst_ptr, UnScaleByZoom(i * strip_width, zoom), 0);
+
+		std::thread worker;
+		if (StartNewThread(&worker, "ottd:viewport", [strip]() { ViewportBlitStrip(strip); })) {
+			workers.push_back(std::move(worker));
+		} else {
+			ViewportBlitStrip(strip);
+		}
+	}
+
+	/* The calling thread takes the first strip. */
+	DrawPixelInfo first = _vd.dpi;
+	first.width = strip_width;
+	ViewportBlitStrip(first);
+
+	for (std::thread &worker : workers) worker.join();
+	return strips;
+}
+
+/**
  * Draws the bounding boxes of all ParentSprites
  * @param psd Array of ParentSprites
  */
@@ -1861,6 +1967,7 @@ void ViewportDoDraw(const Viewport &vp, int left, int top, int right, int bottom
 	_vd.dpi.dst_ptr = BlitterFactory::GetCurrentBlitter()->MoveTo(_cur_dpi->dst_ptr, x - _cur_dpi->left, y - _cur_dpi->top);
 	AutoRestoreBackup dpi_backup(_cur_dpi, &_vd.dpi);
 
+	auto time_start = std::chrono::steady_clock::now();
 	ViewportAddLandscape();
 	ViewportAddVehicles(&_vd.dpi);
 
@@ -1868,26 +1975,24 @@ void ViewportDoDraw(const Viewport &vp, int left, int top, int right, int bottom
 
 	DrawTextEffects(&_vd.dpi);
 
-	if (!_vd.tile_sprites_to_draw.empty()) ViewportDrawTileSprites(&_vd.tile_sprites_to_draw);
-
 	for (auto &psd : _vd.parent_sprites_to_draw) {
 		_vd.parent_sprites_to_sort.push_back(&psd);
 	}
 
 	_vp_sprite_sorter(&_vd.parent_sprites_to_sort);
-	ViewportDrawParentSprites(&_vd.parent_sprites_to_sort, &_vd.child_screen_sprites_to_draw);
+
+	/* Everything is collected and sorted; the pixel work can be split over threads. */
+	auto time_collected = std::chrono::steady_clock::now();
+	ViewportPreloadSprites();
+	int strips = ViewportBlitSprites();
+	auto time_blitted = std::chrono::steady_clock::now();
+	Debug(Facility::Misc, Severity::Debug2, "Viewport draw {}x{} px at zoom {}: collect {} us, blit {} us in {} strip(s)",
+			UnScaleByZoom(_vd.dpi.width, _vd.dpi.zoom), UnScaleByZoom(_vd.dpi.height, _vd.dpi.zoom), to_underlying(_vd.dpi.zoom),
+			std::chrono::duration_cast<std::chrono::microseconds>(time_collected - time_start).count(),
+			std::chrono::duration_cast<std::chrono::microseconds>(time_blitted - time_collected).count(), strips);
 
 	if (_draw_bounding_boxes) ViewportDrawBoundingBoxes(&_vd.parent_sprites_to_sort);
 	if (_draw_dirty_blocks) ViewportDrawDirtyBlocks();
-
-	/* Apply the day/night lighting to the drawn landscape, but not to the overlays and labels drawn below. */
-	if (!IsViewportLightNeutral()) {
-		int light_width = UnScaleByZoom(_vd.dpi.width, _vd.dpi.zoom);
-		int light_height = UnScaleByZoom(_vd.dpi.height, _vd.dpi.zoom);
-		if (light_width > 0 && light_height > 0) {
-			BlitterFactory::GetCurrentBlitter()->TintRect(_vd.dpi.dst_ptr, light_width, light_height, GetViewportLight());
-		}
-	}
 
 	DrawPixelInfo dp = _vd.dpi;
 	ZoomLevel zoom = _vd.dpi.zoom;

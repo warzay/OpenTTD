@@ -629,6 +629,7 @@ SettingsContainer &GetSettingsTree()
 				viewports->Add(new SettingEntry("gui.smooth_scroll"));
 				viewports->Add(new SettingEntry("gui.sprite_shadows"));
 				viewports->Add(new SettingEntry("gui.seasons"));
+				viewports->Add(new SettingEntry("gui.multithreaded_viewport"));
 				viewports->Add(new SettingEntry("gui.daynight_cycle"));
 				viewports->Add(new SettingEntry("gui.daynight_cycle_days"));
 				/* While the horizontal scrollwheel scrolling is written as general code, only
