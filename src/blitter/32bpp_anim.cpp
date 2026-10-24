@@ -280,6 +280,34 @@ void Blitter_32bppAnim::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomL
 	}
 }
 
+void Blitter_32bppAnim::TintRect(void *dst, int width, int height, Colour light)
+{
+	if (_screen_disable_anim) {
+		/* Not drawing to the screen, so there is no animation buffer to keep in sync. */
+		Blitter_32bppOptimized::TintRect(dst, width, height, light);
+		return;
+	}
+
+	Colour *udst = (Colour *)dst;
+	uint16_t *anim = this->ScreenToAnimationBuffer(dst);
+	const uint luminance = GetLightLuminance(light) + 1;
+
+	do {
+		for (int i = 0; i != width; i++) {
+			*udst = TintColour(*udst, light);
+			if (GB(*anim, 0, 8) != 0) {
+				/* Palette animated pixel: PaletteAnimate() recomposes it from the palette and the
+				 * stored brightness, so darken the brightness to keep the lighting during animation. */
+				SB(*anim, 8, 8, (GB(*anim, 8, 8) * luminance) >> 8);
+			}
+			udst++;
+			anim++;
+		}
+		udst = udst - width + _screen.pitch;
+		anim = anim - width + this->anim_buf_pitch;
+	} while (--height);
+}
+
 void Blitter_32bppAnim::DrawColourMappingRect(void *dst, int width, int height, PaletteID pal)
 {
 	if (_screen_disable_anim) {

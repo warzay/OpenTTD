@@ -84,6 +84,16 @@ public:
 	virtual void DrawColourMappingRect(void *dst, int width, int height, PaletteID pal) = 0;
 
 	/**
+	 * Multiply the colours of a rectangle on the screen with a light colour, e.g. for day/night lighting.
+	 * Blitters without RGB output ignore the request.
+	 * @param dst the destination pointer (video-buffer).
+	 * @param width the width of the rectangle.
+	 * @param height the height of the rectangle.
+	 * @param light the light colour; white leaves the pixels untouched.
+	 */
+	virtual void TintRect([[maybe_unused]] void *dst, [[maybe_unused]] int width, [[maybe_unused]] int height, [[maybe_unused]] Colour light) {}
+
+	/**
 	 * Move the destination pointer the requested amount x and y, keeping in mind
 	 *  any pitch and bpp of the renderer.
 	 * @param video The destination pointer (video-buffer) to scroll.

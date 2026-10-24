@@ -944,6 +944,113 @@ static void DrawOverlappedWindow(Window *w, int left, int top, int right, int bo
 }
 
 /**
+ * Get the size of the drop shadow a window casts in the modern interface style.
+ * @param w The window.
+ * @return Shadow size in pixels, 0 when the window casts no shadow.
+ */
+int GetWindowShadowSize(const Window *w)
+{
+	if (!_settings_client.gui.modern_gui) return 0;
+	if (w->window_class == WindowClass::MainWindow) return 0;
+	return ScaleGUITrad(3);
+}
+
+/**
+ * Darken the part of a window's shadow that is not covered by windows above it.
+ * The rectangle is split at the edges of covering windows, like #DrawOverlappedWindow does.
+ * @param w Window casting the shadow.
+ * @param left Left edge of the shadow rectangle.
+ * @param top Top edge of the shadow rectangle.
+ * @param right Right edge of the shadow rectangle (exclusive).
+ * @param bottom Bottom edge of the shadow rectangle (exclusive).
+ */
+static void DrawWindowShadowPart(const Window *w, int left, int top, int right, int bottom)
+{
+	Window::IteratorToFront it(w);
+	++it;
+	for (; !it.IsEnd(); ++it) {
+		const Window *v = *it;
+		if (MayBeShown(v) &&
+				right > v->left &&
+				bottom > v->top &&
+				left < v->left + v->width &&
+				top < v->top + v->height) {
+			int x;
+
+			if (left < (x = v->left)) {
+				DrawWindowShadowPart(w, left, top, x, bottom);
+				DrawWindowShadowPart(w, x, top, right, bottom);
+				return;
+			}
+
+			if (right > (x = v->left + v->width)) {
+				DrawWindowShadowPart(w, left, top, x, bottom);
+				DrawWindowShadowPart(w, x, top, right, bottom);
+				return;
+			}
+
+			if (top < (x = v->top)) {
+				DrawWindowShadowPart(w, left, top, right, x);
+				DrawWindowShadowPart(w, left, x, right, bottom);
+				return;
+			}
+
+			if (bottom > (x = v->top + v->height)) {
+				DrawWindowShadowPart(w, left, top, right, x);
+				DrawWindowShadowPart(w, left, x, right, bottom);
+				return;
+			}
+
+			/* Completely covered by a window above. */
+			return;
+		}
+	}
+
+	GfxFillRect(left, top, right - 1, bottom - 1, PALETTE_TO_TRANSPARENT, FillRectMode::Recolour);
+}
+
+/**
+ * Draw the drop shadows of all windows within a rectangle of the screen that was just repainted.
+ * @param left Left edge of the repainted rectangle.
+ * @param top Top edge of the repainted rectangle.
+ * @param right Right edge of the repainted rectangle (exclusive).
+ * @param bottom Bottom edge of the repainted rectangle (exclusive).
+ */
+static void DrawWindowShadows(int left, int top, int right, int bottom)
+{
+	if (!_settings_client.gui.modern_gui) return;
+
+	/* Draw directly on the screen. */
+	DrawPixelInfo *dp = _cur_dpi;
+	dp->left = 0;
+	dp->top = 0;
+	dp->width = _screen.width;
+	dp->height = _screen.height;
+	dp->pitch = _screen.pitch;
+	dp->dst_ptr = _screen.dst_ptr;
+	dp->zoom = ZoomLevel::Min;
+
+	for (const Window *w : Window::IterateFromBack()) {
+		int shadow = GetWindowShadowSize(w);
+		if (shadow == 0 || !MayBeShown(w)) continue;
+
+		/* The shadow consists of a strip right of and a strip below the window. */
+		const Rect strips[] = {
+			{ w->left + w->width, w->top + shadow,     w->left + w->width + shadow, w->top + w->height + shadow },
+			{ w->left + shadow,   w->top + w->height,  w->left + w->width,          w->top + w->height + shadow },
+		};
+		for (const Rect &s : strips) {
+			int l = std::max(s.left, left);
+			int t = std::max(s.top, top);
+			int r = std::min(s.right, right);
+			int b = std::min(s.bottom, bottom);
+			if (l >= r || t >= b) continue;
+			DrawWindowShadowPart(w, l, t, r, b);
+		}
+	}
+}
+
+/**
  * From a rectangle that needs redrawing, find the windows that intersect with the rectangle.
  * These windows should be re-painted.
  * @param left Left edge of the rectangle that should be repainted
@@ -966,6 +1073,8 @@ void DrawOverlappedWindowForAll(int left, int top, int right, int bottom)
 			DrawOverlappedWindow(w, std::max(left, w->left), std::max(top, w->top), std::min(right, w->left + w->width), std::min(bottom, w->top + w->height));
 		}
 	}
+
+	DrawWindowShadows(left, top, right, bottom);
 }
 
 /**
@@ -974,7 +1083,8 @@ void DrawOverlappedWindowForAll(int left, int top, int right, int bottom)
  */
 void Window::SetDirty() const
 {
-	AddDirtyBlock(this->left, this->top, this->left + this->width, this->top + this->height);
+	int shadow = GetWindowShadowSize(this);
+	AddDirtyBlock(this->left, this->top, this->left + this->width + shadow, this->top + this->height + shadow);
 }
 
 /**

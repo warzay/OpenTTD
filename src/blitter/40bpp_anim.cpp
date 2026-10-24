@@ -357,6 +357,32 @@ void Blitter_40bppAnim::Draw(Blitter::BlitterParams *bp, BlitterMode mode, ZoomL
 	}
 }
 
+void Blitter_40bppAnim::TintRect(void *dst, int width, int height, Colour light)
+{
+	if (_screen_disable_anim) {
+		/* Not drawing to the screen, so there is no animation buffer. */
+		Blitter_32bppOptimized::TintRect(dst, width, height, light);
+		return;
+	}
+
+	Colour *udst = (Colour *)dst;
+	const uint8_t *anim = ScreenToAnimationBuffer(dst);
+	const uint8_t luminance = GetLightLuminance(light);
+	const Colour grey_light(luminance, luminance, luminance);
+
+	do {
+		for (int i = 0; i != width; i++) {
+			/* For palette animated pixels only the brightness of the RGB value is used during composition,
+			 * so those can only be darkened, not coloured. */
+			*udst = TintColour(*udst, *anim != 0 ? grey_light : light);
+			udst++;
+			anim++;
+		}
+		udst = udst - width + _screen.pitch;
+		anim = anim - width + _screen.pitch;
+	} while (--height);
+}
+
 void Blitter_40bppAnim::DrawColourMappingRect(void *dst, int width, int height, PaletteID pal)
 {
 	if (_screen_disable_anim) {

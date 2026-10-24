@@ -1592,6 +1592,8 @@ STR_CONFIG_SETTING_AUTORENEW_MONEY_HELPTEXT                     :Minimal amount 
 STR_CONFIG_SETTING_ERRMSG_DURATION                              :Duration of error message: {STRING2}
 STR_CONFIG_SETTING_ERRMSG_DURATION_HELPTEXT                     :Duration for displaying error messages in a red window. Note that some (critical) error messages are not closed automatically after this time, but must be closed manually
 
+STR_CONFIG_SETTING_MODERN_GUI                                   :Modern interface style: {STRING2}
+STR_CONFIG_SETTING_MODERN_GUI_HELPTEXT                          :Draw windows and buttons flat and cast a soft shadow under every window, instead of the classic bevelled look
 STR_CONFIG_SETTING_HOVER_DELAY                                  :Show tooltips: {STRING2}
 STR_CONFIG_SETTING_HOVER_DELAY_HELPTEXT                         :Delay before tooltips are displayed when hovering the mouse over some interface element. Alternatively tooltips are bound to the right mouse button when this value is set to 0
 STR_CONFIG_SETTING_HOVER_DELAY_VALUE                            :Hover for {COMMA} millisecond{P 0 "" s}
@@ -1719,6 +1721,12 @@ STR_CONFIG_SETTING_SCROLLMODE_LMB                               :Move map with L
 
 STR_CONFIG_SETTING_SMOOTH_SCROLLING                             :Smooth viewport scrolling: {STRING2}
 STR_CONFIG_SETTING_SMOOTH_SCROLLING_HELPTEXT                    :Control how the main view scrolls to a specific position when clicking on the smallmap or when issuing a command to scroll to a specific object on the map. If enabled, the viewport scrolls smoothly, if disabled it jumps directly to the targeted spot
+
+STR_CONFIG_SETTING_DAYNIGHT_CYCLE                               :Day/night lighting cycle: {STRING2}
+STR_CONFIG_SETTING_DAYNIGHT_CYCLE_HELPTEXT                      :Light the map with a slowly changing daylight: dawn, day, dusk and night. The interface is not affected. Requires a 32bpp blitter
+STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS                          :Length of the day/night cycle: {STRING2}
+STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS_HELPTEXT                 :Number of in-game days one complete lighting cycle, from dawn to dawn, takes
+STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS_VALUE                    :{COMMA} day{P 0 "" s}
 
 STR_CONFIG_SETTING_TOOLBAR_DROPDOWN_AUTOSELECT                  :Traditional toolbar menu selection behaviour: {STRING2}
 STR_CONFIG_SETTING_TOOLBAR_DROPDOWN_AUTOSELECT_HELPTEXT         :Choose selection behaviour of toolbar menus. If off, toolbar menus will stay open until a selection is made. If on, toolbar menus will activate when the mouse button is released.

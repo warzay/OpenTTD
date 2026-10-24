@@ -592,6 +592,8 @@ add_files(
     viewport_func.h
     viewport_gui.cpp
     viewport_kdtree.h
+    viewport_light.cpp
+    viewport_light.h
     viewport_sprite_sorter.h
     viewport_type.h
     void_cmd.cpp

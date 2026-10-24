@@ -91,6 +91,7 @@
 #include "network/network_func.h"
 #include "framerate_type.h"
 #include "viewport_cmd.h"
+#include "viewport_light.h"
 
 #include <forward_list>
 #include <stack>
@@ -1849,6 +1850,15 @@ void ViewportDoDraw(const Viewport &vp, int left, int top, int right, int bottom
 
 	if (_draw_bounding_boxes) ViewportDrawBoundingBoxes(&_vd.parent_sprites_to_sort);
 	if (_draw_dirty_blocks) ViewportDrawDirtyBlocks();
+
+	/* Apply the day/night lighting to the drawn landscape, but not to the overlays and labels drawn below. */
+	if (!IsViewportLightNeutral()) {
+		int light_width = UnScaleByZoom(_vd.dpi.width, _vd.dpi.zoom);
+		int light_height = UnScaleByZoom(_vd.dpi.height, _vd.dpi.zoom);
+		if (light_width > 0 && light_height > 0) {
+			BlitterFactory::GetCurrentBlitter()->TintRect(_vd.dpi.dst_ptr, light_width, light_height, GetViewportLight());
+		}
+	}
 
 	DrawPixelInfo dp = _vd.dpi;
 	ZoomLevel zoom = _vd.dpi.zoom;

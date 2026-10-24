@@ -31,6 +31,18 @@ void Blitter_32bppBase::DrawLine(void *video, int x, int y, int x2, int y2, int 
 	});
 }
 
+void Blitter_32bppBase::TintRect(void *dst, int width, int height, Colour light)
+{
+	Colour *udst = (Colour *)dst;
+	do {
+		for (int i = 0; i != width; i++) {
+			*udst = TintColour(*udst, light);
+			udst++;
+		}
+		udst = udst - width + _screen.pitch;
+	} while (--height);
+}
+
 void Blitter_32bppBase::DrawRect(void *video, int width, int height, PixelColour colour)
 {
 	Colour colour32 = LookupColourInPalette(colour.p);

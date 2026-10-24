@@ -309,6 +309,23 @@ void DrawFrameRect(int left, int top, int right, int bottom, Colours colour, Fra
 {
 	if (flags.Test(FrameFlag::Transparent)) {
 		GfxFillRect(left, top, right, bottom, PALETTE_TO_TRANSPARENT, FillRectMode::Recolour);
+	} else if (_settings_client.gui.modern_gui) {
+		assert(colour < Colours::End);
+
+		/* Flat style: a thin dark outline and a plain interior; pressed widgets are darker instead of lighter. */
+		const PixelColour outline = GetColourGradient(colour, Shade::Darker);
+		const PixelColour interior = GetColourGradient(colour, flags.Test(FrameFlag::Lowered) ? Shade::Normal : Shade::Light);
+
+		Rect outer = {left, top, right, bottom};                   // Outside rectangle
+		Rect inner = outer.Shrink(WidgetDimensions::scaled.bevel); // Inside rectangle
+
+		GfxFillRect(outer.left,      outer.top,        inner.left - 1,  outer.bottom, outline); // Left
+		GfxFillRect(inner.left,      outer.top,        outer.right,     inner.top - 1, outline); // Top
+		GfxFillRect(inner.right + 1, inner.top,        outer.right,     inner.bottom, outline); // Right
+		GfxFillRect(inner.left,      inner.bottom + 1, outer.right,     outer.bottom, outline); // Bottom
+		if (!flags.Test(FrameFlag::BorderOnly)) {
+			GfxFillRect(inner.left, inner.top, inner.right, inner.bottom, interior); // Inner
+		}
 	} else {
 		assert(colour < Colours::End);
 

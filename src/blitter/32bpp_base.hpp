@@ -22,6 +22,7 @@ public:
 	void SetPixel(void *video, int x, int y, PixelColour colour) override;
 	void DrawLine(void *video, int x, int y, int x2, int y2, int screen_width, int screen_height, PixelColour colour, int width, int dash) override;
 	void DrawRect(void *video, int width, int height, PixelColour colour) override;
+	void TintRect(void *dst, int width, int height, Colour light) override;
 	void CopyFromBuffer(void *video, const void *src, int width, int height) override;
 	void CopyToBuffer(const void *video, void *dst, int width, int height) override;
 	void CopyImageToBuffer(const void *video, void *dst, int width, int height, int dst_pitch) override;
@@ -113,6 +114,27 @@ public:
 		}
 
 		return ComposeColourPANoCheck(colour, a, current);
+	}
+
+	/**
+	 * Multiply a colour with a light colour (component wise), keeping the alpha channel.
+	 * @param colour the colour already on the screen.
+	 * @param light the light to apply; 255 per channel means "no change".
+	 * @return the lit colour.
+	 */
+	static inline Colour TintColour(Colour colour, Colour light)
+	{
+		return Colour((colour.r * (light.r + 1)) >> 8, (colour.g * (light.g + 1)) >> 8, (colour.b * (light.b + 1)) >> 8, colour.a);
+	}
+
+	/**
+	 * Get the perceived brightness of a light colour.
+	 * @param light the light colour.
+	 * @return brightness in the range 0..255.
+	 */
+	static inline uint8_t GetLightLuminance(Colour light)
+	{
+		return ((light.r * 19595) + (light.g * 38470) + (light.b * 7471)) / 65536;
 	}
 
 	/**

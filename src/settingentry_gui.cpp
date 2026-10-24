@@ -613,6 +613,7 @@ SettingsContainer &GetSettingsTree()
 			SettingsPage *general = interface->Add(new SettingsPage(STR_CONFIG_SETTING_INTERFACE_GENERAL));
 			{
 				general->Add(new SettingEntry("gui.osk_activation"));
+				general->Add(new SettingEntry("gui.modern_gui"));
 				general->Add(new SettingEntry("gui.hover_delay_ms"));
 				general->Add(new SettingEntry("gui.errmsg_duration"));
 				general->Add(new SettingEntry("gui.window_snap_radius"));
@@ -626,6 +627,8 @@ SettingsContainer &GetSettingsTree()
 				viewports->Add(new SettingEntry("gui.auto_scrolling"));
 				viewports->Add(new SettingEntry("gui.scroll_mode"));
 				viewports->Add(new SettingEntry("gui.smooth_scroll"));
+				viewports->Add(new SettingEntry("gui.daynight_cycle"));
+				viewports->Add(new SettingEntry("gui.daynight_cycle_days"));
 				/* While the horizontal scrollwheel scrolling is written as general code, only
 				 *  the cocoa (OSX) driver generates input for it.
 				 *  Since it's also able to completely disable the scrollwheel will we display it on all platforms anyway */

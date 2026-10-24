@@ -232,6 +232,9 @@ struct GUISettings {
 	uint8_t linkgraph_colours; ///< linkgraph overlay colours
 	ViewportScrollMode scroll_mode; ///< viewport scroll mode
 	bool smooth_scroll; ///< smooth scroll viewports
+	bool daynight_cycle; ///< tint viewports with a day/night lighting cycle
+	bool modern_gui; ///< flat widgets and window shadows instead of the classic bevelled look
+	uint16_t daynight_cycle_days; ///< length of one day/night lighting cycle in game days
 	bool measure_tooltip; ///< show a permanent tooltip when dragging tools
 	uint8_t liveries; ///< options for displaying company liveries, 0=none, 1=self, 2=all
 	bool prefer_teamchat; ///< choose the chat message target with \<ENTER\>, true=all clients, false=your team

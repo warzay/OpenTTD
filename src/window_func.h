@@ -16,6 +16,7 @@
 #include "strings_type.h"
 
 Window *FindWindowById(WindowClass cls, WindowNumber number);
+int GetWindowShadowSize(const Window *w);
 Window *FindWindowByClass(WindowClass cls);
 Window *GetMainWindow();
 void ChangeWindowOwner(Owner old_owner, Owner new_owner);
