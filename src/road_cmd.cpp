@@ -42,6 +42,7 @@
 #include "road_func.h"
 #include "road_cmd.h"
 #include "landscape_cmd.h"
+#include "season.h"
 #include "rail_cmd.h"
 
 #include "table/strings.h"
@@ -1645,7 +1646,7 @@ static void DrawRoadBits(TileInfo *ti)
 		/* DrawFoundation() modifies ti. */
 	}
 
-	DrawRoadGroundSprites(ti, road, tram, road_rti, tram_rti, GetRoadside(ti->tile), IsOnSnowOrDesert(ti->tile));
+	DrawRoadGroundSprites(ti, road, tram, road_rti, tram_rti, GetRoadside(ti->tile), (IsOnSnowOrDesert(ti->tile) || IsSeasonSnow(ti)));
 
 	/* Draw one way */
 	if (road_rti != nullptr) {
@@ -1746,7 +1747,7 @@ static void DrawTile_Road(TileInfo *ti)
 				SpriteID image = SPR_ROAD_Y + to_underlying(axis);
 
 				Roadside roadside = GetRoadside(ti->tile);
-				if (DrawRoadAsSnowOrDesert(IsOnSnowOrDesert(ti->tile), roadside)) {
+				if (DrawRoadAsSnowOrDesert((IsOnSnowOrDesert(ti->tile) || IsSeasonSnow(ti)), roadside)) {
 					image += NUM_SLOPES;
 				} else {
 					switch (roadside) {
@@ -1769,7 +1770,7 @@ static void DrawTile_Road(TileInfo *ti)
 				if (IsCrossingBarred(ti->tile)) image += 2;
 
 				Roadside roadside = GetRoadside(ti->tile);
-				if (DrawRoadAsSnowOrDesert(IsOnSnowOrDesert(ti->tile), roadside)) {
+				if (DrawRoadAsSnowOrDesert((IsOnSnowOrDesert(ti->tile) || IsSeasonSnow(ti)), roadside)) {
 					image += 8;
 				} else {
 					switch (roadside) {

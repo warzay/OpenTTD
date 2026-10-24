@@ -32,6 +32,7 @@
 #include "object_map.h"
 #include "rail_cmd.h"
 #include "landscape_cmd.h"
+#include "season.h"
 
 #include "table/strings.h"
 #include "table/railtypes.h"
@@ -2103,6 +2104,7 @@ static inline void DrawTrackSprite(SpriteID sprite, PaletteID pal, const TileInf
 static void DrawTrackBitsOverlay(TileInfo *ti, TrackBits track, const RailTypeInfo *rti)
 {
 	RailGroundType rgt = GetRailGroundType(ti->tile);
+	if (rgt >= RailGroundType::Grass && rgt <= RailGroundType::FenceHoriz2 && IsSeasonSnow(ti)) rgt = RailGroundType::SnowOrDesert;
 	Foundation f = GetRailFoundation(ti->tileh, track);
 	Corner halftile_corner = Corner::Invalid;
 
@@ -2298,6 +2300,7 @@ static void DrawTrackBits(TileInfo *ti, TrackBits track)
 	}
 
 	RailGroundType rgt = GetRailGroundType(ti->tile);
+	if (rgt >= RailGroundType::Grass && rgt <= RailGroundType::FenceHoriz2 && IsSeasonSnow(ti)) rgt = RailGroundType::SnowOrDesert;
 	Foundation f = GetRailFoundation(ti->tileh, track);
 	Corner halftile_corner = Corner::Invalid;
 

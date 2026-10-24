@@ -1726,6 +1726,8 @@ STR_CONFIG_SETTING_DAYNIGHT_CYCLE                               :Day/night light
 STR_CONFIG_SETTING_DAYNIGHT_CYCLE_HELPTEXT                      :Light the map with a slowly changing daylight: dawn, day, dusk and night. The interface is not affected. Requires a 32bpp blitter
 STR_CONFIG_SETTING_SPRITE_SHADOWS                               :Object shadows: {STRING2}
 STR_CONFIG_SETTING_SPRITE_SHADOWS_HELPTEXT                      :Draw a drop shadow under vehicles, buildings, trees and other objects on the map. Taller objects cast longer shadows. Not drawn when zoomed far out
+STR_CONFIG_SETTING_SEASONS                                      :Seasons: {STRING2}
+STR_CONFIG_SETTING_SEASONS_HELPTEXT                             :Follow the calendar visually: in the temperate climate the land turns white from November to March, snow creeping down from the hills and back, and in every climate the daylight gets a spring, summer, autumn or winter tone. Purely visual, no effect on the game
 STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS                          :Length of the day/night cycle: {STRING2}
 STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS_HELPTEXT                 :Number of in-game days one complete lighting cycle, from dawn to dawn, takes
 STR_CONFIG_SETTING_DAYNIGHT_CYCLE_DAYS_VALUE                    :{COMMA} day{P 0 "" s}

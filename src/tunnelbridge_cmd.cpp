@@ -38,6 +38,7 @@
 #include "company_gui.h"
 #include "tunnelbridge_cmd.h"
 #include "landscape_cmd.h"
+#include "season.h"
 #include "terraform_cmd.h"
 
 #include "table/strings.h"
@@ -1340,7 +1341,7 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 			image = SPR_TUNNEL_ENTRY_REAR_ROAD;
 		}
 
-		if (HasTunnelBridgeSnowOrDesert(ti->tile)) image += railtype_overlay != 0 ? 8 : 32;
+		if (HasTunnelBridgeSnowOrDesert(ti->tile) || IsSeasonSnow(ti)) image += railtype_overlay != 0 ? 8 : 32;
 
 		image += to_underlying(tunnelbridge_direction) * 2;
 		DrawGroundSprite(image, PAL_NONE);
@@ -1455,7 +1456,7 @@ static void DrawTile_TunnelBridge(TileInfo *ti)
 		}
 		psid = psid.subspan(base_offset, 1);
 
-		if (!HasTunnelBridgeSnowOrDesert(ti->tile)) {
+		if (!HasTunnelBridgeSnowOrDesert(ti->tile) && !IsSeasonSnow(ti)) {
 			TileIndex next = ti->tile + TileOffsByDiagDir(tunnelbridge_direction);
 			if (ti->tileh != SLOPE_FLAT && ti->z == 0 && HasTileWaterClass(next) && GetWaterClass(next) == WaterClass::Sea) {
 				DrawShoreTile(ti->tileh);

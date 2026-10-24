@@ -62,6 +62,7 @@
 #include "station_cmd.h"
 #include "waypoint_cmd.h"
 #include "landscape_cmd.h"
+#include "season.h"
 #include "rail_cmd.h"
 #include "newgrf_roadstop.h"
 #include "timer/timer.h"
@@ -3173,6 +3174,10 @@ bool SplitGroundSpriteForOverlay(const TileInfo *ti, SpriteID *ground, RailTrack
 
 			case LandscapeType::Tropic:
 				snow_desert = GetTropicZone(ti->tile) == TropicZone::Desert;
+				break;
+
+			case LandscapeType::Temperate:
+				snow_desert = IsSeasonSnow(ti);
 				break;
 
 			default:

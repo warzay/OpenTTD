@@ -425,6 +425,8 @@ add_files(
     settings_table.h
     settings_table.cpp
     settings_type.h
+    season.cpp
+    season.h
     ship.h
     ship_cmd.cpp
     ship_cmd.h

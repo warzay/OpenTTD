@@ -20,6 +20,7 @@
 #include "core/random_func.hpp"
 #include "newgrf_generic.h"
 #include "landscape_cmd.h"
+#include "season.h"
 
 #include "table/strings.h"
 #include "table/sprites.h"
@@ -141,8 +142,8 @@ static void DrawClearLandFence(const TileInfo *ti)
 /** @copydoc DrawTileProc */
 static void DrawTile_Clear(TileInfo *ti)
 {
-	if (IsSnowTile(ti->tile)) {
-		uint8_t density = GetClearDensity(ti->tile);
+	if (IsSnowTile(ti->tile) || IsSeasonSnow(ti)) {
+		uint8_t density = IsSnowTile(ti->tile) ? GetClearDensity(ti->tile) : 3;
 		DrawGroundSprite(_clear_land_sprites_snow_desert[density] + SlopeToSpriteOffset(ti->tileh), PAL_NONE);
 		if (GetClearGround(ti->tile) == ClearGround::Rocks) {
 			DrawGroundSprite(_clear_land_sprites_snowy_rocks[density] + SlopeToSpriteOffset(ti->tileh), PAL_NONE);

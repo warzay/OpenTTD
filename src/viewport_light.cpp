@@ -22,6 +22,7 @@
 #include "timer/timer.h"
 #include "timer/timer_window.h"
 #include "timer/timer_game_tick.h"
+#include "season.h"
 
 #include "safeguards.h"
 
@@ -104,6 +105,12 @@ void UpdateViewportLight()
 		uint phase = static_cast<uint>((TimerGameTick::counter % cycle_ticks) * 1000 / cycle_ticks);
 		light = ComputeLight(phase);
 	}
+
+	if (_game_mode != GameMode::Editor) {
+		Colour tone = GetSeasonTint();
+		light = Colour((light.r * (tone.r + 1)) >> 8, (light.g * (tone.g + 1)) >> 8, (light.b * (tone.b + 1)) >> 8);
+	}
+	UpdateSeason();
 
 	if (light.r == _viewport_light.r && light.g == _viewport_light.g && light.b == _viewport_light.b) return;
 

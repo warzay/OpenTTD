@@ -28,6 +28,7 @@
 #include "timer/timer_game_tick.h"
 #include "tree_cmd.h"
 #include "landscape_cmd.h"
+#include "season.h"
 
 #include "table/strings.h"
 #include "table/tree_land.h"
@@ -651,7 +652,7 @@ struct TreeListEnt : PalSpriteID, Coord2D<int8_t> {};
 /** @copydoc DrawTileProc */
 static void DrawTile_Trees(TileInfo *ti)
 {
-	switch (GetTreeGround(ti->tile)) {
+	switch (IsSeasonSnow(ti) && GetTreeGround(ti->tile) != TreeGround::Shore ? TreeGround::SnowOrDesert : GetTreeGround(ti->tile)) {
 		case TreeGround::Shore: DrawShoreTile(ti->tileh); break;
 		case TreeGround::Grass: DrawClearLandTile(ti, GetTreeDensity(ti->tile)); break;
 		case TreeGround::Rough: DrawRoughLandTile(ti); break;
